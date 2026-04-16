@@ -58,13 +58,13 @@ class CleaningPipeline:
             except Exception:
                 a["stops"] = None
 
-        # is_direct cohérence
+        
         if a.get("stops") == 0:
             a["is_direct"] = True
         elif isinstance(a.get("stops"), int) and a["stops"] > 0:
             a["is_direct"] = False
 
-        # stop_details → string JSON
+        # stop_details 
         sd = a.get("stop_details")
         if sd and not isinstance(sd, str):
             a["stop_details"] = json.dumps(sd)

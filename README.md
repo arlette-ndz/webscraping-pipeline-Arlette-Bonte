@@ -11,7 +11,7 @@ Pipeline complet de collecte, nettoyage et stockage des prix de billets d'avion 
 
 ---
 
-## 🏗 Architecture (Niveau Argent)
+## 🏗 Architecture 
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
