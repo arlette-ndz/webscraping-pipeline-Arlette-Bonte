@@ -1,16 +1,13 @@
-# ✈ FlightWatch ABJ — Pipeline de Scraping de Vols depuis Abidjan
+# Pipeline de Scraping de Vols depuis Abidjan
 
-> **Projet de fin de module Web Scraping — ENSEA AS Data Science**  
-> Enseignant : Dr N'golo Konaté  
+> **Projet de Web Scraping — ENSEA AS Data Science**  
 > Niveau visé : 🥈 **ARGENT** + Dashboard bonus
 
 ---
 
 ## 🎯 Description
 
-Pipeline complet de collecte, nettoyage et stockage des prix de billets d'avion depuis **Abidjan (ABJ)** vers **41 destinations populaires** à travers le monde (Afrique, Europe, Amériques, Asie, Moyen-Orient).
-
-Données collectées via l'API **Skyscanner (RapidAPI)** avec le spider Scrapy, stockées dans PostgreSQL, exposées via une API Flask, et visualisées dans un dashboard HTML à 2 pages.
+Pipeline complet de collecte, nettoyage et stockage des prix de billets d'avion depuis **Abidjan (ABJ)** vers **les destinations populaires** à travers le monde. Les données sont collectées via l'API **Skyscanner (RapidAPI)** avec le spider Scrapy, stockées dans PostgreSQL, exposées via une API Flask, et visualisées dans un dashboard HTML à 2 pages.
 
 ---
 
@@ -138,7 +135,7 @@ curl -X POST http://localhost:8080/api/scrape/async
 
 ---
 
-## 🔌 Si tu as déjà pgAdmin avec flights_db
+## Si tu as déjà pgAdmin avec flights_db
 
 Si ta base `flights_db` existe déjà dans ton pgAdmin local, modifie `.env` :
 
@@ -166,7 +163,7 @@ Puis dans pgAdmin, connecte un nouveau serveur :
 
 ---
 
-## 📡 Endpoints API
+##  Endpoints API
 
 ### Données
 
@@ -207,7 +204,7 @@ Puis dans pgAdmin, connecte un nouveau serveur :
 
 ---
 
-## 🌍 Destinations Scrapées (41 destinations)
+## 🌍 Destinations Scrapées 
 
 | Zone | Destinations |
 |------|-------------|
@@ -231,7 +228,7 @@ Puis dans pgAdmin, connecte un nouveau serveur :
 
 ---
 
-## 🛠 Commandes Utiles
+##  Commandes Utiles
 
 ```bash
 # Voir les logs en temps réel
@@ -257,7 +254,7 @@ docker-compose exec celery_worker celery -A app.tasks inspect active
 
 ---
 
-## 🧹 Nettoyage des Données
+##  Nettoyage des Données
 
 Le pipeline effectue automatiquement :
 - Déduplication via contrainte UNIQUE PostgreSQL
@@ -269,24 +266,4 @@ Le pipeline effectue automatiquement :
 
 ---
 
-## 👥 Équipe
 
-| Membre | Rôle |
-|--------|------|
-| ... | Data Engineer (scraping + nettoyage) |
-| ... | Backend Developer (API + DB) |
-
-**Niveau visé :** 🥈 Argent + Dashboard (bonus)  
-**Institution :** ENSEA — AS Data Science  
-**Enseignant :** Dr N'golo Konaté
-
----
-
-## 📜 Charte Éthique
-
-✅ API officielle Skyscanner via RapidAPI (pas de scraping HTML agressif)  
-✅ Délai entre requêtes ≥ 2 secondes  
-✅ User-Agent identifiable  
-✅ Limite 500 items par scraping  
-✅ Aucune donnée personnelle collectée  
-✅ Données utilisées uniquement à des fins pédagogiques
