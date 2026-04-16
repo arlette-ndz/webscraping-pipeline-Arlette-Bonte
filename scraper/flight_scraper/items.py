@@ -1,0 +1,25 @@
+import scrapy
+
+
+class FlightItem(scrapy.Item):
+    scraped_at = scrapy.Field()
+    query_type = scrapy.Field()
+    origin_sky_id = scrapy.Field()
+    origin_name = scrapy.Field()
+    destination_sky_id = scrapy.Field()
+    destination_name = scrapy.Field()
+    departure_date = scrapy.Field()
+    return_date = scrapy.Field()
+    price = scrapy.Field()
+    currency = scrapy.Field()
+    cabin_class = scrapy.Field()
+    stops = scrapy.Field()
+    stop_details = scrapy.Field()
+    stop_summary = scrapy.Field()
+    airline = scrapy.Field()
+    flight_number = scrapy.Field()
+    duration_minutes = scrapy.Field()
+    is_direct = scrapy.Field()
+    score = scrapy.Field()
+    tags = scrapy.Field()
+    raw = scrapy.Field()

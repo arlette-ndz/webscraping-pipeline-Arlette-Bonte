@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard contrôle des prix des billets d'avions</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a; --surface: #1e293b; --surface2: #2d3f55;
+      --accent: #38bdf8; --accent2: #818cf8; --accent3: #34d399;
+      --danger: #f87171; --warn: #fbbf24; --text: #e2e8f0;
+      --muted: #94a3b8; --border: #334155; --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    nav {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0 24px; display: flex; align-items: center; height: 60px; gap: 32px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-logo { font-size: 1.2rem; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+    .nav-links { display: flex; gap: 4px; margin-left: auto; }
+    .nav-links a { padding: 6px 16px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 0.9rem; transition: all .2s; }
+    .nav-links a:hover, .nav-links a.active { background: var(--surface2); color: var(--text); }
+    .nav-links a.active { color: var(--accent); }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
+    .page-title h1 { font-size: 1.6rem; font-weight: 700; }
+    .page-title p { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+
+    /* CONTROLS */
+    .controls {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 20px;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .controls label { font-size: 0.85rem; color: var(--muted); }
+    .controls select, .controls input {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 0.85rem; outline: none;
+    }
+    .controls select:focus, .controls input:focus { border-color: var(--accent); }
+    .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all .2s; }
+    .btn-primary { background: var(--accent); color: #0f172a; }
+    .btn-primary:hover { filter: brightness(1.1); }
+
+    /* CHARTS */
+    .chart-full { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+    .chart-full h3 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; }
+    .chart-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .chart-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; }
+    canvas { max-height: 320px; }
+
+    /* RANKING */
+    .ranking-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .dest-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px; cursor: pointer;
+      transition: all .2s; position: relative; overflow: hidden;
+    }
+    .dest-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .dest-card.selected { border-color: var(--accent); background: var(--surface2); }
+    .dest-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--surface2); }
+    .dest-card.selected::before { background: var(--accent); }
+    .dest-name { font-weight: 700; font-size: 1.05rem; margin-bottom: 8px; }
+    .dest-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+    .meta-pill {
+      font-size: 0.75rem; padding: 2px 10px; border-radius: 20px;
+      background: var(--bg); color: var(--muted);
+    }
+    .meta-pill.highlight { color: var(--accent3); }
+
+    /* LOADING */
+    .loading { display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--muted); }
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) { .chart-2col { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Dashboard contrôle des prix des billets d'avions</div>
+  <div class="nav-links">
+    <a href="index.html">📊 Vue d'ensemble</a>
+    <a href="analysis.html" class="active">📈 Analyse des prix</a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="page-header">
+    <div class="page-title">
+      <h1>Analyse des Prix — Évolution & Comparaisons</h1>
+      <p>Suivez l'évolution des tarifs depuis Abidjan (ABJ) vers les grandes destinations</p>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div>
+      <label>Destination</label><br>
+      <select id="selDestination" onchange="updateEvolution()">
+        <option value="Paris">Paris</option>
+        <option value="London">London</option>
+        <option value="Dubai">Dubai</option>
+        <option value="Casablanca">Casablanca</option>
+        <option value="Dakar">Dakar</option>
+        <option value="Accra">Accra</option>
+        <option value="Lagos">Lagos</option>
+        <option value="Nairobi">Nairobi</option>
+        <option value="Brussels">Brussels</option>
+        <option value="New York">New York</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" onclick="updateAll()">🔄 Mettre à jour</button>
+  </div>
+
+  <!-- Price Evolution Chart -->
+  <div class="chart-full">
+    <h3>📈 Évolution des prix — <span id="evolTitle">Paris</span></h3>
+    <div id="evolContainer">
+      <div class="loading"><div class="spinner"></div>Chargement…</div>
+    </div>
+    <canvas id="chartEvolution" style="display:none"></canvas>
+  </div>
+
+  <!-- Two-col charts -->
+  <div class="chart-2col">
+    <div class="chart-card">
+      <h3>🏆 Top 10 compagnies (nombre de vols)</h3>
+      <canvas id="chartAirlines"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>💸 Tarif moyen par nombre d'escales</h3>
+      <canvas id="chartStopsPrice"></canvas>
+    </div>
+  </div>
+
+  <!-- Destination Ranking -->
+  <div class="chart-full" style="margin-bottom:24px">
+    <h3>🌍 Classement des destinations par prix</h3>
+    <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px">Cliquez sur une destination pour voir l'évolution de ses prix</p>
+    <div class="ranking-grid" id="rankingGrid">
+      <div class="loading"><div class="spinner"></div>Chargement…</div>
+    </div>
+  </div>
+
+  <!-- Comparison Chart -->
+  <div class="chart-full">
+    <h3>🔀 Comparaison Prix min / moyen / max par destination</h3>
+    <canvas id="chartComparison"></canvas>
+  </div>
+
+</div>
+
+<script>
+const API = '/api';
+
+async function fetchJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+async function updateAll() {
+  await Promise.all([
+    updateEvolution(),
+    loadAirlines(),
+    loadStopsPrice(),
+    loadRanking(),
+    loadComparison(),
+  ]);
+}
+
+// ── Évolution prix ────────────────────────────────────────────────────
+let chartEvol = null;
+async function updateEvolution() {
+  const dest = document.getElementById('selDestination').value;
+  document.getElementById('evolTitle').textContent = dest;
+  const container = document.getElementById('evolContainer');
+  const canvas = document.getElementById('chartEvolution');
+  container.style.display = 'flex';
+  canvas.style.display = 'none';
+  container.innerHTML = `<div class="loading"><div class="spinner"></div>Chargement…</div>`;
+
+  try {
+    const d = await fetchJSON(`${API}/stats/price-evolution?destination=${encodeURIComponent(dest)}`);
+    const rows = d.data;
+    if (!rows.length) {
+      container.innerHTML = `<div class="loading" style="color:var(--muted)">Aucune donnée pour "${dest}"</div>`;
+      return;
+    }
+    container.style.display = 'none';
+    canvas.style.display = 'block';
+
+    const ctx = canvas.getContext('2d');
+    if (chartEvol) chartEvol.destroy();
+    chartEvol = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: rows.map(r => r.date),
+        datasets: [
+          {
+            label: 'Prix moyen (€)',
+            data: rows.map(r => r.avg_price),
+            borderColor: '#38bdf8', backgroundColor: '#38bdf822',
+            tension: 0.4, fill: true, pointRadius: 4, pointHoverRadius: 6,
+          },
+          {
+            label: 'Prix min (€)',
+            data: rows.map(r => r.min_price),
+            borderColor: '#34d399', backgroundColor: 'transparent',
+            tension: 0.4, borderDash: [5, 5], pointRadius: 3,
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { labels: { color: '#94a3b8' } },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}€`,
+              afterLabel: (ctx) => {
+                const r = rows[ctx.dataIndex];
+                return ` ${r.count} offre(s)`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { color: '#94a3b8', maxRotation: 45 }, grid: { color: '#334155' } },
+          y: { ticks: { color: '#94a3b8', callback: v => v + '€' }, grid: { color: '#334155' } }
+        }
+      }
+    });
+  } catch (e) {
+    container.innerHTML = `<div class="loading" style="color:var(--danger)">Erreur: ${e.message}</div>`;
+  }
+}
+
+// ── Airlines ──────────────────────────────────────────────────────────
+let chartAir = null;
+async function loadAirlines() {
+  try {
+    const d = await fetchJSON(`${API}/stats/top-airlines`);
+    const rows = d.data;
+    const ctx = document.getElementById('chartAirlines').getContext('2d');
+    if (chartAir) chartAir.destroy();
+    chartAir = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: rows.map(r => r.airline.length > 20 ? r.airline.slice(0, 18) + '…' : r.airline),
+        datasets: [{
+          label: 'Nb vols',
+          data: rows.map(r => r.count),
+          backgroundColor: '#818cf8aa',
+          borderColor: '#818cf8',
+          borderWidth: 1.5,
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+          y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { display: false } }
+        }
+      }
+    });
+  } catch (e) { console.error(e); }
+}
+
+// ── Stops vs Price ────────────────────────────────────────────────────
+let chartSP = null;
+async function loadStopsPrice() {
+  try {
+    const d = await fetchJSON(`${API}/stats/stops-distribution`);
+    const rows = d.data;
+    const ctx = document.getElementById('chartStopsPrice').getContext('2d');
+    if (chartSP) chartSP.destroy();
+    chartSP = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: rows.map(r => r.label),
+        datasets: [{
+          label: 'Prix moyen (€)',
+          data: rows.map(r => r.avg_price || 0),
+          backgroundColor: ['#34d399aa', '#fbbf24aa', '#f87171aa'],
+          borderColor: ['#34d399', '#fbbf24', '#f87171'],
+          borderWidth: 1.5, borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+          y: { ticks: { color: '#94a3b8', callback: v => v + '€' }, grid: { color: '#334155' } }
+        }
+      }
+    });
+  } catch (e) { console.error(e); }
+}
+
+// ── Ranking ───────────────────────────────────────────────────────────
+async function loadRanking() {
+  const grid = document.getElementById('rankingGrid');
+  try {
+    const d = await fetchJSON(`${API}/stats/by-destination`);
+    const rows = d.data;
+    grid.innerHTML = rows.map((r, i) => `
+      <div class="dest-card" onclick="selectDest('${r.destination}')">
+        <div class="dest-name">${['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'][i] || '✈'} ${r.destination}</div>
+        <div class="dest-meta">
+          <span class="meta-pill highlight">Min: ${r.min_price != null ? r.min_price + '€' : '—'}</span>
+          <span class="meta-pill">Moy: ${r.avg_price != null ? r.avg_price + '€' : '—'}</span>
+          <span class="meta-pill">Max: ${r.max_price != null ? r.max_price + '€' : '—'}</span>
+          <span class="meta-pill">${r.count} offres</span>
+          <span class="meta-pill">${r.direct_count || 0} directs</span>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    grid.innerHTML = `<p style="color:var(--danger)">Erreur: ${e.message}</p>`;
+  }
+}
+
+function selectDest(dest) {
+  document.getElementById('selDestination').value = dest;
+  updateEvolution();
+  document.querySelectorAll('.dest-card').forEach(c => c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Comparison ────────────────────────────────────────────────────────
+let chartComp = null;
+async function loadComparison() {
+  try {
+    const d = await fetchJSON(`${API}/stats/by-destination`);
+    const rows = d.data.slice(0, 10);
+    const ctx = document.getElementById('chartComparison').getContext('2d');
+    if (chartComp) chartComp.destroy();
+    chartComp = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: rows.map(r => r.destination),
+        datasets: [
+          { label: 'Prix min (€)', data: rows.map(r => r.min_price || 0), backgroundColor: '#34d39966', borderColor: '#34d399', borderWidth: 1.5, borderRadius: 4 },
+          { label: 'Prix moyen (€)', data: rows.map(r => r.avg_price || 0), backgroundColor: '#38bdf866', borderColor: '#38bdf8', borderWidth: 1.5, borderRadius: 4 },
+          { label: 'Prix max (€)', data: rows.map(r => r.max_price || 0), backgroundColor: '#f8717166', borderColor: '#f87171', borderWidth: 1.5, borderRadius: 4 },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#94a3b8' } } },
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+          y: { ticks: { color: '#94a3b8', callback: v => v + '€' }, grid: { color: '#334155' } }
+        }
+      }
+    });
+    document.getElementById('chartComparison').style.maxHeight = '360px';
+  } catch (e) { console.error(e); }
+}
+
+updateAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+BOT_NAME = "flight_scraper"
+SPIDER_MODULES = ["flight_scraper.spiders"]
+NEWSPIDER_MODULE = "flight_scraper.spiders"
+
+# Identité éthique
+USER_AGENT = "ENSEA Educational Project "
+
+# Politesse
+ROBOTSTXT_OBEY = False  # API RapidAPI directe
+DOWNLOAD_DELAY = 2
+RANDOMIZE_DOWNLOAD_DELAY = True
+AUTOTHROTTLE_ENABLED = True
+AUTOTHROTTLE_START_DELAY = 1
+AUTOTHROTTLE_MAX_DELAY = 10
+AUTOTHROTTLE_TARGET_CONCURRENCY = 1.0
+CONCURRENT_REQUESTS = 4
+CONCURRENT_REQUESTS_PER_DOMAIN = 2
+
+# Retry
+RETRY_TIMES = 3
+RETRY_HTTP_CODES = [429, 500, 502, 503, 504]
+
+# Logs
+LOG_LEVEL = "INFO"
+TELNETCONSOLE_ENABLED = False
+
+# Encodage
+FEED_EXPORT_ENCODING = "utf-8"
+
+# Twisted
+TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"

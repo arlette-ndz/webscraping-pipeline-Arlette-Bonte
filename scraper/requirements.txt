@@ -1,0 +1,5 @@
+scrapy==2.11.2
+psycopg2-binary==2.9.9
+itemadapter==0.9.0
+celery==5.3.6
+redis==5.0.1

@@ -1,0 +1,210 @@
+version: "3.9"
+
+# ══════════════════════════════════════════════════════════════════════
+#  FlightWatch ABJ — Pipeline de scraping de vols depuis Abidjan
+#  Niveau ARGENT : API + PostgreSQL + Celery + Redis + Dashboard
+# ══════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ────────────────────────────────────────────────────────────────────
+  # 1. BASE DE DONNÉES PostgreSQL
+  # ────────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: flights_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-flights_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flights_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-flights_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres_init/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-flights_user} -d ${POSTGRES_DB:-flights_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flights_net
+
+  # ────────────────────────────────────────────────────────────────────
+  # 2. REDIS (broker Celery)
+  # ────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: flights_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - flights_net
+
+  # ────────────────────────────────────────────────────────────────────
+  # 3. API FLASK
+  # ────────────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: flights_api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-flights_db}
+      POSTGRES_USER: ${POSTGRES_USER:-flights_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flights_pass}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      RAPIDAPI_KEY: ${RAPIDAPI_KEY}
+    volumes:
+      - scraper_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - flights_net
+
+  # ────────────────────────────────────────────────────────────────────
+  # 4. CELERY WORKER (tâches asynchrones)
+  # ────────────────────────────────────────────────────────────────────
+  celery_worker:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: flights_celery_worker
+    restart: unless-stopped
+    command: celery -A app.tasks worker --loglevel=info --concurrency=2
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-flights_db}
+      POSTGRES_USER: ${POSTGRES_USER:-flights_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flights_pass}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      RAPIDAPI_KEY: ${RAPIDAPI_KEY}
+    volumes:
+      - scraper_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - flights_net
+
+  # ────────────────────────────────────────────────────────────────────
+  # 5. CELERY BEAT (planification automatique toutes les 6h)
+  # ────────────────────────────────────────────────────────────────────
+  celery_beat:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: flights_celery_beat
+    restart: unless-stopped
+    command: celery -A app.tasks beat --loglevel=info --schedule=/tmp/celerybeat-schedule
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-flights_db}
+      POSTGRES_USER: ${POSTGRES_USER:-flights_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flights_pass}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      RAPIDAPI_KEY: ${RAPIDAPI_KEY}
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - celery_worker
+    networks:
+      - flights_net
+
+  # ────────────────────────────────────────────────────────────────────
+  # 6. SCRAPER Scrapy (peut être lancé manuellement ou via Celery)
+  # ────────────────────────────────────────────────────────────────────
+  scraper:
+    build:
+      context: ./scraper
+      dockerfile: Dockerfile
+    container_name: flights_scraper
+    restart: "no"
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-flights_db}
+      POSTGRES_USER: ${POSTGRES_USER:-flights_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flights_pass}
+      RAPIDAPI_KEY: ${RAPIDAPI_KEY}
+      SCRAPE_LIMIT: ${SCRAPE_LIMIT:-500}
+    volumes:
+      - scraper_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - flights_net
+    profiles:
+      - scrape
+
+  # ────────────────────────────────────────────────────────────────────
+  # 7. NGINX + DASHBOARD
+  # ────────────────────────────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: flights_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./dashboard:/usr/share/nginx/html:ro
+    depends_on:
+      - api
+    networks:
+      - flights_net
+
+  # ────────────────────────────────────────────────────────────────────
+  # 8. PGADMIN (optionnel)
+  # ────────────────────────────────────────────────────────────────────
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: flights_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@ensea.ci}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_LISTEN_PORT: 80
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - flights_net
+
+# ══════════════════════════════════════════════════════════════════════
+networks:
+  flights_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  scraper_data:
+  pgadmin_data:
