@@ -179,6 +179,10 @@ async function updateAll() {
   ]);
 }
 
+async function formatXOF(amount) {
+  if (amount == null) return '—';
+  return Math.round(amount).toLocaleString('fr-FR') + ' FCFA';
+}
 // ── Évolution prix ────────────────────────────────────────────────────
 let chartEvol = null;
 async function updateEvolution() {
@@ -227,7 +231,7 @@ async function updateEvolution() {
           legend: { labels: { color: '#94a3b8' } },
           tooltip: {
             callbacks: {
-              label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}€`,
+              label: ctx => ` ${ctx.dataset.label}: ${Math.round(ctx.raw).toLocaleString('fr-FR')} FCFA`,
               afterLabel: (ctx) => {
                 const r = rows[ctx.dataIndex];
                 return ` ${r.count} offre(s)`;
@@ -237,7 +241,7 @@ async function updateEvolution() {
         },
         scales: {
           x: { ticks: { color: '#94a3b8', maxRotation: 45 }, grid: { color: '#334155' } },
-          y: { ticks: { color: '#94a3b8', callback: v => v + '€' }, grid: { color: '#334155' } }
+          y: { ticks: { color: '#94a3b8', callback: v => Math.round(v).toLocaleString('fr-FR') + ' FCFA'}, grid: { color: '#334155' } }
         }
       }
     });
@@ -322,9 +326,9 @@ async function loadRanking() {
       <div class="dest-card" onclick="selectDest('${r.destination}')">
         <div class="dest-name">${['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'][i] || '✈'} ${r.destination}</div>
         <div class="dest-meta">
-          <span class="meta-pill highlight">Min: ${r.min_price != null ? r.min_price + '€' : '—'}</span>
-          <span class="meta-pill">Moy: ${r.avg_price != null ? r.avg_price + '€' : '—'}</span>
-          <span class="meta-pill">Max: ${r.max_price != null ? r.max_price + '€' : '—'}</span>
+          <span class="meta-pill highlight">Min: ${formatXOF(r.min_price) != null ? formatXOF(r.min_price) + '€' : '—'}</span>
+          <span class="meta-pill">Moy: ${ formatXOF(r.avg_price) != null ?  formatXOF(r.avg_price) + '€' : '—'}</span>
+          <span class="meta-pill">Max: ${ formatXOF(r.max_price) != null ?  formatXOF(r.max_price) + '€' : '—'}</span>
           <span class="meta-pill">${r.count} offres</span>
           <span class="meta-pill">${r.direct_count || 0} directs</span>
         </div>
@@ -356,9 +360,9 @@ async function loadComparison() {
       data: {
         labels: rows.map(r => r.destination),
         datasets: [
-          { label: 'Prix min (€)', data: rows.map(r => r.min_price || 0), backgroundColor: '#34d39966', borderColor: '#34d399', borderWidth: 1.5, borderRadius: 4 },
-          { label: 'Prix moyen (€)', data: rows.map(r => r.avg_price || 0), backgroundColor: '#38bdf866', borderColor: '#38bdf8', borderWidth: 1.5, borderRadius: 4 },
-          { label: 'Prix max (€)', data: rows.map(r => r.max_price || 0), backgroundColor: '#f8717166', borderColor: '#f87171', borderWidth: 1.5, borderRadius: 4 },
+          { label: 'Prix min (XOF)', data: rows.map(r => formatXOF(r.min_price) || 0), backgroundColor: '#34d39966', borderColor: '#34d399', borderWidth: 1.5, borderRadius: 4 },
+          { label: 'Prix moyen (XOF)', data: rows.map(r => formatXOF(r.avg_price)|| 0), backgroundColor: '#38bdf866', borderColor: '#38bdf8', borderWidth: 1.5, borderRadius: 4 },
+          { label: 'Prix max (XOF)', data: rows.map(r => formatXOF(r.max_price) || 0), backgroundColor: '#f8717166', borderColor: '#f87171', borderWidth: 1.5, borderRadius: 4 },
         ]
       },
       options: {
@@ -366,7 +370,7 @@ async function loadComparison() {
         plugins: { legend: { labels: { color: '#94a3b8' } } },
         scales: {
           x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
-          y: { ticks: { color: '#94a3b8', callback: v => v + '€' }, grid: { color: '#334155' } }
+          y: { ticks: { color: '#94a3b8', callback: v => Math.round(v).toLocaleString('fr-FR') + ' FCFA' }, grid: { color: '#334155' } }
         }
       }
     });

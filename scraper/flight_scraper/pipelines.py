@@ -18,7 +18,7 @@ class CleaningPipeline:
         price = a.get("price")
         if price is not None:
             try:
-                a["price"] = round(float(price), 2)
+                a["price"] = round(float(price))
             except (ValueError, TypeError):
                 a["price"] = None
 

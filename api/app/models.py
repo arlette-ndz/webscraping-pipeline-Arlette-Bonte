@@ -14,7 +14,7 @@ class Flight(db.Model):
     destination_name = db.Column(db.String(100))
     departure_date = db.Column(db.Date)
     return_date = db.Column(db.Date)
-    price = db.Column(db.Numeric(10, 2))
+    price = price = db.Column(db.Numeric(12, 0))
     currency = db.Column(db.String(5))
     cabin_class = db.Column(db.String(50))
     stops = db.Column(db.Integer)

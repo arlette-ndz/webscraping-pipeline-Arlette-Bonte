@@ -371,6 +371,10 @@ async function fetchJSON(url) {
 async function refreshAll() {
   await Promise.all([loadKPIs(), loadChartDestinations(), loadChartStops(), loadTable(1)]);
 }
+async function formatXOF(amount) {
+  if (amount == null) return '—';
+  return Math.round(amount).toLocaleString('fr-FR') + ' FCFA';
+}
 
 // ── KPIs ──────────────────────────────────────────────────────────────
 async function loadKPIs() {
@@ -396,12 +400,12 @@ async function loadKPIs() {
       </div>
       <div class="stat-card blue">
         <div class="stat-label">Prix minimum</div>
-        <div class="stat-value">${s.min_price != null ? s.min_price.toLocaleString() + '€' : '—'}</div>
+        <div class="stat-value">${await formatXOF(s.min_price)}</div>
         <div class="stat-sub">meilleur tarif</div>
       </div>
       <div class="stat-card purple">
         <div class="stat-label">Prix moyen</div>
-        <div class="stat-value">${s.avg_price != null ? s.avg_price.toLocaleString() + '€' : '—'}</div>
+        <div class="stat-value">${await formatXOF(s.avg_price)}</div>
         <div class="stat-sub">toutes destinations</div>
       </div>
     `;
@@ -414,10 +418,10 @@ let chartDest = null;
 async function loadChartDestinations() {
   try {
     const d = await fetchJSON(`${API}/stats/by-destination`);
-    const rows = d.data.slice(0, 10);
+    const rows = d.data.slice(0, 20);
     const labels = rows.map(r => r.destination);
-    const avgs = rows.map(r => r.avg_price || 0);
-    const mins = rows.map(r => r.min_price || 0);
+    const avgs = rows.map(r => formatXOF(r.avg_price) || 0);
+    const mins = rows.map(r => formatXOF(r.min_price) || 0);
 
     const ctx = document.getElementById('chartDestinations').getContext('2d');
     if (chartDest) chartDest.destroy();
@@ -426,8 +430,8 @@ async function loadChartDestinations() {
       data: {
         labels,
         datasets: [
-          { label: 'Prix moyen (€)', data: avgs, backgroundColor: '#38bdf866', borderColor: '#38bdf8', borderWidth: 1.5, borderRadius: 4 },
-          { label: 'Prix min (€)', data: mins, backgroundColor: '#34d39966', borderColor: '#34d399', borderWidth: 1.5, borderRadius: 4 },
+          { label: 'Prix moyen (XOF)', data: avgs, backgroundColor: '#38bdf866', borderColor: '#38bdf8', borderWidth: 1.5, borderRadius: 4 },
+          { label: 'Prix min (XOF)', data: mins, backgroundColor: '#34d39966', borderColor: '#34d399', borderWidth: 1.5, borderRadius: 4 },
         ]
       },
       options: {
@@ -435,7 +439,7 @@ async function loadChartDestinations() {
         plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
         scales: {
           x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#1e293b' } },
-          y: { ticks: { color: '#94a3b8', callback: v => v + '€' }, grid: { color: '#334155' } }
+          y: { ticks: { color: '#94a3b8', callback: v => Math.round(v).toLocaleString('fr-FR') + ' FCFA'}, grid: { color: '#334155' } }
         }
       }
     });
@@ -523,7 +527,7 @@ async function loadTable(page = 1) {
       return `<tr>
         <td><strong>${f.destination.name}</strong><div style="font-size:.75rem;color:var(--muted)">${f.destination.sky_id}</div></td>
         <td>${f.departure_date || '—'}</td>
-        <td class="price-tag">${f.price != null ? f.price.toLocaleString() + ' ' + f.currency : '—'}</td>
+        <td class="price-tag">${f.price != null ?formatXOF(f.price) : '—'}</td>
         <td>${f.cabin_class || '—'}</td>
         <td>${stopsLabel}${stopDetail}</td>
         <td style="color:var(--muted)">${f.airline || '—'}</td>
