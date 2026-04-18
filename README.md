@@ -268,4 +268,3 @@ docker-compose down -v
 
 ---
 
-*Bon courage à tous ! 🚀*
