@@ -1,0 +1,24 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev gcc curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY api/       ./api/
+COPY celery_app/ ./celery_app/
+COPY flight_scraper/ ./flight_scraper/
+COPY collector/ ./collector/
+
+RUN mkdir -p /app/data /app/logs
+
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 5000
+
+CMD ["python", "api/app.py"]

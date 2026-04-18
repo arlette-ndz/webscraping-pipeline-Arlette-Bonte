@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyse des prix — Vol Tracker Abidjan</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<style>
+:root{
+  --bg:#06090f;--surf:#0d1117;--card:#111820;--border:#1c2a3a;
+  --accent:#f97316;--amber:#f59e0b;--blue:#3b82f6;--green:#10b981;
+  --red:#ef4444;--purple:#8b5cf6;--teal:#14b8a6;
+  --text:#e2e8f0;--muted:#64748b;
+  --head:'Syne',sans-serif;--body:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:14px}
+/* Sidebar identique */
+.sidebar{position:fixed;top:0;left:0;width:230px;height:100vh;background:var(--surf);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100}
+.brand{padding:24px 20px 20px;border-bottom:1px solid var(--border)}
+.brand-icon{font-size:30px;margin-bottom:6px}
+.brand-name{font-family:var(--head);font-size:17px;font-weight:800;color:var(--accent);line-height:1.2}
+.brand-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.nav{flex:1;padding:16px 0;overflow-y:auto}
+.nav-section{padding:8px 20px 4px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600}
+.nav-link{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;border-left:3px solid transparent;transition:.15s}
+.nav-link:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.nav-link.active{color:var(--accent);border-left-color:var(--accent);background:rgba(249,115,22,.07)}
+.nav-icon{width:18px;text-align:center;font-size:16px}
+.sidebar-foot{padding:16px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.6}
+/* Main */
+.main{margin-left:230px;padding:28px 32px;min-height:100vh}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.page-title{font-family:var(--head);font-size:24px;font-weight:800}
+.page-title span{color:var(--accent)}
+.page-sub{font-size:13px;color:var(--muted);margin-top:4px}
+.badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.b-orange{background:rgba(249,115,22,.15);color:var(--accent)}
+.b-blue{background:rgba(59,130,246,.15);color:var(--blue)}
+.b-green{background:rgba(16,185,129,.15);color:var(--green)}
+.b-purple{background:rgba(139,92,246,.15);color:var(--purple)}
+.btn{padding:8px 16px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:.15s;font-family:var(--body)}
+.btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn-tab{background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:500}
+.btn-tab.active,.btn-tab:hover{border-color:var(--accent);color:var(--accent);background:rgba(249,115,22,.08)}
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.card-title{font-family:var(--head);font-size:14px;font-weight:700}
+.chart-box{position:relative;height:260px}
+.chart-lg{position:relative;height:320px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+/* Dest cards comparaison */
+.dest-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.dest-card{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:14px;cursor:pointer;transition:.15s;position:relative}
+.dest-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.dest-card.sel{border-color:var(--accent);background:rgba(249,115,22,.06)}
+.dest-card.sel::after{content:'✓';position:absolute;top:8px;right:10px;font-size:11px;color:var(--accent);font-weight:700}
+.dc-flag{font-size:20px;margin-bottom:5px}
+.dc-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc-prix{font-size:17px;font-weight:800;color:var(--accent);margin-top:3px}
+.dc-xof{font-size:10px;color:var(--muted)}
+.dc-escale{font-size:10px;margin-top:4px}
+/* Sélecteur destination */
+.sel,.inp{padding:7px 11px;border-radius:7px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:var(--body);outline:none;transition:.15s}
+.sel:focus,.inp:focus{border-color:var(--accent)}
+/* Heatmap calendrier */
+.heatmap-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:8px}
+.hm-hdr{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:5px}
+.hm-day-lbl{text-align:center;font-size:10px;color:var(--muted);font-weight:600}
+.hm-cell{aspect-ratio:1;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;cursor:pointer;transition:transform .1s;padding:1px}
+.hm-cell:hover{transform:scale(1.15);z-index:1}
+.hm-num{font-size:10px;font-weight:700}
+.hm-val{font-size:8px;opacity:.9}
+.hm-legend{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.hm-leg-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)}
+.hm-leg-dot{width:10px;height:10px;border-radius:2px}
+/* Tooltip */
+.tooltip{position:fixed;z-index:999;background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:10px 13px;font-size:12px;pointer-events:none;display:none;min-width:160px;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+/* Stats résumé sélection */
+.sum-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.sum-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center}
+.sum-val{font-family:var(--head);font-size:20px;font-weight:800}
+.sum-lbl{font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.4px}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+@media(max-width:1100px){.dest-grid{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="tooltip" id="tooltip"></div>
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-icon">✈️</div>
+    <div class="brand-name">Vol Tracker<br>Abidjan</div>
+    <div class="brand-sub">ENSEA — AS Data Science</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Navigation</div>
+    <a class="nav-link" href="/"><span class="nav-icon">📊</span>Vue d'ensemble</a>
+    <a class="nav-link active" href="/analyse"><span class="nav-icon">📈</span>Analyse des prix</a>
+    <div class="nav-section" style="margin-top:12px">Outils</div>
+    <a class="nav-link" href="http://localhost:5050" target="_blank"><span class="nav-icon">🐘</span>PgAdmin</a>
+    <a class="nav-link" href="/api/health" target="_blank"><span class="nav-icon">🔌</span>API Health</a>
+  </nav>
+</aside>
+
+<main class="main">
+
+  <div class="topbar">
+    <div>
+      <h1 class="page-title">Analyse des <span>Prix</span></h1>
+      <p class="page-sub">Évolution, comparaison et meilleurs tarifs — données en temps réel</p>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn-tab active" id="tab-ow" onclick="setType('oneway')">→ Aller simple</button>
+      <button class="btn-tab" id="tab-rt" onclick="setType('return')">↔ Aller-retour</button>
+    </div>
+  </div>
+
+  <!-- Cards destinations (cliquables pour l'évolution) -->
+  <div id="dest-grid" class="dest-grid"></div>
+
+  <!-- Résumé sélection -->
+  <div class="sum-row" id="sum-row" style="display:none">
+    <div class="sum-item">
+      <div class="sum-val" id="sum-min">—</div>
+      <div class="sum-lbl">Prix minimum USD</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-val" id="sum-avg">—</div>
+      <div class="sum-lbl">Prix moyen USD</div>
+    </div>
+    <div class="sum-item">
+      <div class="sum-val" id="sum-max">—</div>
+      <div class="sum-lbl">Prix maximum USD</div>
+    </div>
+  </div>
+
+  <!-- Ligne 1 : évolution + comparaison min/moy/max -->
+  <div class="g2">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">📈 Évolution des prix par collecte</span>
+        <span class="badge b-orange" id="evol-lbl">Sélectionnez une destination</span>
+      </div>
+      <div class="chart-box"><canvas id="ch-line"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">⚖️ Min / Moy / Max par destination</span>
+        <span class="badge b-blue">Top 10</span>
+      </div>
+      <div class="chart-box"><canvas id="ch-range"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Heatmap par date de départ -->
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">🗓️ Heatmap — Prix par date de départ</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="sel" id="hm-dest" onchange="chargerHeatmap()">
+          <option value="">Choisir une destination…</option>
+          <optgroup label="Afrique">
+            <option value="DKR">🇸🇳 Dakar</option><option value="ACC">🇬🇭 Accra</option>
+            <option value="LOS">🇳🇬 Lagos</option><option value="NBO">🇰🇪 Nairobi</option>
+            <option value="ADD">🇪🇹 Addis-Abeba</option><option value="JNB">🇿🇦 Johannesburg</option>
+            <option value="CMN">🇲🇦 Casablanca</option>
+          </optgroup>
+          <optgroup label="Europe">
+            <option value="CDG">🇫🇷 Paris</option><option value="BRU">🇧🇪 Bruxelles</option>
+            <option value="IST">🇹🇷 Istanbul</option><option value="LHR">🇬🇧 Londres</option>
+            <option value="AMS">🇳🇱 Amsterdam</option>
+          </optgroup>
+          <optgroup label="Moyen-Orient / Amériques / Asie">
+            <option value="DOH">🇶🇦 Doha</option><option value="DXB">🇦🇪 Dubaï</option>
+            <option value="JFK">🇺🇸 New York</option><option value="YUL">🇨🇦 Montréal</option>
+            <option value="LAX">🇺🇸 Los Angeles</option><option value="CAN">🇨🇳 Guangzhou</option>
+          </optgroup>
+        </select>
+        <span class="badge b-green" id="hm-badge">Sélectionnez</span>
+      </div>
+    </div>
+    <div id="hm-container">
+      <div style="text-align:center;padding:30px;color:var(--muted)">
+        <div style="font-size:32px;margin-bottom:10px">🗓️</div>
+        Sélectionnez une destination pour afficher la heatmap des prix par date de départ
+      </div>
+    </div>
+    <div class="hm-legend" id="hm-legend" style="display:none">
+      <span style="font-size:11px;color:var(--muted);margin-right:4px">Prix :</span>
+      <div class="hm-leg-item"><div class="hm-leg-dot" style="background:#10b981"></div>Moins cher</div>
+      <div class="hm-leg-item"><div class="hm-leg-dot" style="background:#f59e0b"></div>Moyen</div>
+      <div class="hm-leg-item"><div class="hm-leg-dot" style="background:#ef4444"></div>Plus cher</div>
+      <div class="hm-leg-item"><div class="hm-leg-dot" style="background:#1c2a3a"></div>Aucun vol</div>
+    </div>
+  </div>
+
+  <!-- Scatter prix vs durée -->
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">⏱️ Prix vs Durée du vol — Toutes destinations</span>
+      <span class="badge b-purple">Analyse corrélation</span>
+    </div>
+    <div class="chart-lg"><canvas id="ch-scatter"></canvas></div>
+  </div>
+
+  <!-- Top 10 meilleurs prix en tableau -->
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">🏆 Top meilleurs prix actuels</span>
+      <span class="badge b-green" id="top-lbl">Aller simple</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse" id="top-tbl">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:9px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border)">#</th>
+            <th style="text-align:left;padding:9px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border)">Destination</th>
+            <th style="text-align:left;padding:9px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border)">Continent</th>
+            <th style="text-align:left;padding:9px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border)">Prix min USD</th>
+            <th style="text-align:left;padding:9px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border)">Prix min FCFA</th>
+            <th style="text-align:left;padding:9px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border)">Prix moy USD</th>
+            <th style="text-align:left;padding:9px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border)">Escales min</th>
+            <th style="text-align:left;padding:9px 12px;font-size:11px;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border)">Vols dispo</th>
+          </tr>
+        </thead>
+        <tbody id="top-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const API='';
+let tripType='oneway';
+let meilleursData=[];
+let selDests=new Set();
+let charts={};
+
+const FLAGS={
+  DKR:'🇸🇳',ACC:'🇬🇭',LFW:'🇹🇬',BKO:'🇲🇱',OUA:'🇧🇫',LOS:'🇳🇬',COO:'🇧🇯',CKY:'🇬🇳',
+  DLA:'🇨🇲',YAO:'🇨🇲',LBV:'🇬🇦',NBO:'🇰🇪',ADD:'🇪🇹',NIM:'🇳🇪',JNB:'🇿🇦',CPT:'🇿🇦',
+  CMN:'🇲🇦',RAK:'🇲🇦',CAI:'🇪🇬',CDG:'🇫🇷',BRU:'🇧🇪',IST:'🇹🇷',LHR:'🇬🇧',AMS:'🇳🇱',
+  FRA:'🇩🇪',MAD:'🇪🇸',LIL:'🇫🇷',DOH:'🇶🇦',DXB:'🇦🇪',BEY:'🇱🇧',JFK:'🇺🇸',YUL:'🇨🇦',
+  IAD:'🇺🇸',ORD:'🇺🇸',MIA:'🇺🇸',LAX:'🇺🇸',YQB:'🇨🇦',YOW:'🇨🇦',CAN:'🇨🇳',PEK:'🇨🇳',
+  BOM:'🇮🇳',SPY:'🇨🇮',HGO:'🇨🇮',BYK:'🇨🇮',KEO:'🇨🇮',
+};
+const COLORS=['#f97316','#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#14b8a6','#84cc16','#fb923c','#60a5fa'];
+
+// ── Init ──────────────────────────────────────────────────────────────────
+async function init(){
+  await chargerMeilleurs();
+  await chargerScatter();
+}
+
+function setType(t){
+  tripType=t;
+  document.getElementById('tab-ow').classList.toggle('active',t==='oneway');
+  document.getElementById('tab-rt').classList.toggle('active',t==='return');
+  document.getElementById('top-lbl').textContent=t==='return'?'Aller-retour':'Aller simple';
+  chargerMeilleurs();
+  if(document.getElementById('hm-dest').value) chargerHeatmap();
+}
+
+// ── Meilleurs prix ────────────────────────────────────────────────────────
+async function chargerMeilleurs(){
+  try{
+    const r=await fetch(`${API}/api/meilleurs-prix?type_vol=${tripType}`);
+    if(!r.ok) return;
+    const {data}=await r.json();
+    meilleursData=data||[];
+    rendreDestCards();
+    rendreRange();
+    rendreTopTable();
+  } catch(e){console.error(e);}
+}
+
+function rendreDestCards(){
+  const grid=document.getElementById('dest-grid');
+  if(!meilleursData.length){
+    grid.innerHTML='<div style="grid-column:span 5;text-align:center;padding:20px;color:var(--muted)">Aucune donnée — lancez le scraping</div>';
+    return;
+  }
+  grid.innerHTML=meilleursData.slice(0,15).map(d=>{
+    const f=FLAGS[d.destination]||'🌍';
+    const sel=selDests.has(d.destination)?'sel':'';
+    const esc=d.escales_min===0?'<span style="color:#10b981;font-size:10px">✈ Direct</span>':`<span style="color:#f59e0b;font-size:10px">${d.escales_min} escale(s)</span>`;
+    return `<div class="dest-card ${sel}" onclick="toggleDest('${d.destination}')">
+      <div class="dc-flag">${f}</div>
+      <div class="dc-name">${d.ville_destination||d.destination}</div>
+      <div class="dc-prix">$${d.prix_min_usd}</div>
+      <div class="dc-xof">${Number(d.prix_min_xof||0).toLocaleString('fr-FR')} FCFA</div>
+      <div class="dc-escale">${esc}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDest(code){
+  selDests.has(code)?selDests.delete(code):selDests.add(code);
+  rendreDestCards();
+  majResume();
+  majEvolution();
+}
+
+function majResume(){
+  const row=document.getElementById('sum-row');
+  if(!selDests.size){row.style.display='none';return;}
+  const rel=meilleursData.filter(d=>selDests.has(d.destination));
+  if(!rel.length){row.style.display='none';return;}
+  document.getElementById('sum-min').textContent='$'+Math.min(...rel.map(d=>d.prix_min_usd));
+  document.getElementById('sum-avg').textContent='$'+Math.round(rel.reduce((a,d)=>a+Number(d.prix_moyen_usd||d.prix_min_usd),0)/rel.length);
+  document.getElementById('sum-max').textContent='$'+Math.max(...rel.map(d=>d.prix_max_usd));
+  row.style.display='grid';
+}
+
+async function majEvolution(){
+  document.getElementById('evol-lbl').textContent=
+    selDests.size?[...selDests].map(c=>meilleursData.find(d=>d.destination===c)?.ville_destination||c).join(', '):'Sélectionnez une destination';
+  if(!selDests.size){if(charts.line){charts.line.data.datasets=[];charts.line.update();}return;}
+
+  const datasets=[];
+  let i=0;
+  for(const code of selDests){
+    try{
+      const r=await fetch(`${API}/api/evolution/${code}?type_vol=${tripType}`);
+      if(!r.ok) continue;
+      const {data}=await r.json();
+      if(!data||!data.length) continue;
+      const dest=meilleursData.find(d=>d.destination===code);
+      datasets.push({
+        label:(FLAGS[code]||'')+' '+(dest?.ville_destination||code),
+        data:data.map(e=>({x:e.date,y:parseFloat(e.prix_min)})),
+        borderColor:COLORS[i%COLORS.length],
+        backgroundColor:COLORS[i%COLORS.length]+'20',
+        tension:.35,fill:false,pointRadius:4,pointHoverRadius:7,
+      });
+      i++;
+    }catch{}
+  }
+  if(!datasets.length) return;
+  if(charts.line) charts.line.destroy();
+  charts.line=new Chart(document.getElementById('ch-line'),{
+    type:'line',data:{datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      scales:{
+        x:{type:'category',ticks:{color:'#64748b',maxTicksLimit:8},grid:{color:'rgba(255,255,255,.03)'}},
+        y:{ticks:{color:'#64748b',callback:v=>'$'+v},grid:{color:'rgba(255,255,255,.05)'}},
+      },
+      plugins:{
+        legend:{labels:{color:'#94a3b8',font:{size:11}}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: $${c.parsed.y} (~${Math.round(c.parsed.y*620).toLocaleString()} FCFA)`}},
+      }
+    }
+  });
+}
+
+// ── Range chart ───────────────────────────────────────────────────────────
+function rendreRange(){
+  const top=meilleursData.slice(0,10);
+  if(!top.length) return;
+  const labels=top.map(d=>(FLAGS[d.destination]||'')+' '+(d.ville_destination||d.destination));
+  if(charts.range) charts.range.destroy();
+  charts.range=new Chart(document.getElementById('ch-range'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Min',data:top.map(d=>d.prix_min_usd),backgroundColor:'rgba(16,185,129,.7)',borderColor:'#10b981',borderWidth:1,borderRadius:4},
+        {label:'Moy',data:top.map(d=>d.prix_moyen_usd),backgroundColor:'rgba(245,158,11,.7)',borderColor:'#f59e0b',borderWidth:1,borderRadius:4},
+        {label:'Max',data:top.map(d=>d.prix_max_usd),backgroundColor:'rgba(239,68,68,.55)',borderColor:'#ef4444',borderWidth:1,borderRadius:4},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      scales:{
+        x:{ticks:{color:'#64748b',font:{size:10},maxRotation:30},grid:{color:'rgba(255,255,255,.03)'}},
+        y:{ticks:{color:'#64748b',callback:v=>'$'+v},grid:{color:'rgba(255,255,255,.05)'}},
+      },
+      plugins:{
+        legend:{labels:{color:'#94a3b8',font:{size:11}}},
+        tooltip:{callbacks:{label:c=>` ${c.dataset.label}: $${c.parsed.y} (~${Math.round(c.parsed.y*620).toLocaleString()} FCFA)`}},
+      }
+    }
+  });
+}
+
+// ── Top table ─────────────────────────────────────────────────────────────
+function rendreTopTable(){
+  const tb=document.getElementById('top-body');
+  if(!meilleursData.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--muted)">Aucune donnée</td></tr>';return;}
+  tb.innerHTML=meilleursData.slice(0,15).map((d,i)=>{
+    const f=FLAGS[d.destination]||'🌍';
+    const xof=Number(d.prix_min_xof||0).toLocaleString('fr-FR');
+    const esc=d.escales_min===0?'<span style="color:#10b981;font-size:12px">Direct</span>':`<span style="color:#f59e0b;font-size:12px">${d.escales_min} escale(s)</span>`;
+    return `<tr style="border-bottom:1px solid rgba(28,42,58,.5)">
+      <td style="padding:10px 12px;color:var(--muted);font-size:13px">${i+1}</td>
+      <td style="padding:10px 12px"><span style="margin-right:6px">${f}</span><strong style="font-size:13px">${d.ville_destination||d.destination}</strong><br><span style="color:var(--muted);font-size:11px">${d.pays_destination||''}</span></td>
+      <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${d.continent||'—'}</td>
+      <td style="padding:10px 12px"><strong style="color:var(--accent);font-size:14px">$${d.prix_min_usd}</strong></td>
+      <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${xof} F</td>
+      <td style="padding:10px 12px;font-size:13px">$${d.prix_moyen_usd||'—'}</td>
+      <td style="padding:10px 12px">${esc}</td>
+      <td style="padding:10px 12px;color:var(--muted);font-size:12px">${d.nb_vols}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Scatter ───────────────────────────────────────────────────────────────
+async function chargerScatter(){
+  try{
+    const r=await fetch(`${API}/api/vols?limit=150&sort=prix`);
+    if(!r.ok) return;
+    const {data:vols}=await r.json();
+    const withDur=vols.filter(v=>v.duree_minutes>0&&v.prix>0);
+    if(!withDur.length) return;
+    // Grouper par continent
+    const byCont={};
+    withDur.forEach(v=>{
+      const k=v.continent||'Autres';
+      if(!byCont[k]) byCont[k]={label:k,data:[]};
+      byCont[k].data.push({x:v.duree_minutes,y:parseFloat(v.prix),dest:v.ville_destination,comp:v.compagnie});
+    });
+    const datasets=Object.entries(byCont).map(([k,v],i)=>({
+      label:v.label,data:v.data,
+      backgroundColor:COLORS[i%COLORS.length]+'aa',
+      pointRadius:5,pointHoverRadius:8,
+    }));
+    if(charts.scatter) charts.scatter.destroy();
+    charts.scatter=new Chart(document.getElementById('ch-scatter'),{
+      type:'scatter',data:{datasets},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        scales:{
+          x:{ticks:{color:'#64748b',callback:v=>`${Math.floor(v/60)}h${String(v%60).padStart(2,'0')}`},title:{display:true,text:'Durée du vol',color:'#64748b'},grid:{color:'rgba(255,255,255,.03)'}},
+          y:{ticks:{color:'#64748b',callback:v=>'$'+v},title:{display:true,text:'Prix (USD)',color:'#64748b'},grid:{color:'rgba(255,255,255,.05)'}},
+        },
+        plugins:{
+          legend:{labels:{color:'#94a3b8',font:{size:11}}},
+          tooltip:{callbacks:{label:c=>{
+            const d=c.raw;
+            const h=Math.floor(d.x/60),m=String(d.x%60).padStart(2,'0');
+            return ` ${d.dest||''} — $${d.y} — ${h}h${m}${d.comp?' — '+d.comp.substring(0,20):''}`;
+          }}}
+        }
+      }
+    });
+  }catch(e){console.error(e);}
+}
+
+// ── Heatmap ───────────────────────────────────────────────────────────────
+async function chargerHeatmap(){
+  const dest=document.getElementById('hm-dest').value;
+  if(!dest) return;
+  const container=document.getElementById('hm-container');
+  container.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">⏳ Chargement…</div>';
+  try{
+    const r=await fetch(`${API}/api/vols?destination=${dest}&type_vol=${tripType}&limit=100`);
+    if(!r.ok) throw new Error();
+    const {data:vols}=await r.json();
+    if(!vols||!vols.length){
+      container.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">Aucune donnée pour cette destination</div>';
+      document.getElementById('hm-badge').textContent='Aucune donnée';
+      document.getElementById('hm-legend').style.display='none';
+      return;
+    }
+    // Grouper prix par date_depart
+    const byDate={};
+    vols.forEach(v=>{
+      if(!v.date_depart) return;
+      const d=v.date_depart.substring(0,10);
+      if(!byDate[d]||v.prix<byDate[d]) byDate[d]=parseFloat(v.prix);
+    });
+    const prices=Object.values(byDate).filter(Boolean);
+    if(!prices.length){container.innerHTML='<div style="text-align:center;padding:20px;color:var(--muted)">Pas de dates disponibles</div>';return;}
+    const pMin=Math.min(...prices),pMax=Math.max(...prices),pRange=pMax-pMin||1;
+    document.getElementById('hm-badge').textContent=
+      `${Object.keys(byDate).length} dates — Min $${pMin.toFixed(0)} / Max $${pMax.toFixed(0)}`;
+    document.getElementById('hm-legend').style.display='flex';
+
+    // Générer les 30 prochains jours
+    const today=new Date();
+    const days=[];
+    for(let i=7;i<=37;i++){
+      const d=new Date(today);d.setDate(today.getDate()+i);
+      const ds=d.toISOString().substring(0,10);
+      days.push({date:ds,day:d.getDate(),month:d.getMonth()+1,price:byDate[ds]});
+    }
+
+    function color(p){
+      if(!p) return '#1c2a3a';
+      const r=(p-pMin)/pRange;
+      if(r<.33) return `rgba(16,185,129,${.5+r*1.5})`;
+      if(r<.66) return `rgba(245,158,11,${.5+r})`;
+      return `rgba(239,68,68,${.5+r*.8})`;
+    }
+    function fmt(p){if(!p)return '';return p>=1000?`$${(p/1000).toFixed(1)}k`:`$${Math.round(p)}`;}
+
+    // Trouver le jour de la semaine du premier jour
+    const firstDow=new Date(days[0].date).getDay();
+    const blanks=Array(firstDow).fill(null);
+    const allCells=[...blanks,...days];
+
+    container.innerHTML=`
+      <div class="hm-hdr">${['D','L','M','M','J','V','S'].map(d=>`<div class="hm-day-lbl">${d}</div>`).join('')}</div>
+      <div class="heatmap-grid">
+        ${allCells.map(c=>{
+          if(!c) return '<div class="hm-cell" style="background:transparent"></div>';
+          const bg=color(c.price);
+          return `<div class="hm-cell" style="background:${bg}"
+            onmouseenter="showTip(event,'${c.date}',${c.price||0})"
+            onmouseleave="hideTip()">
+            <div class="hm-num">${c.day}</div>
+            <div class="hm-val">${fmt(c.price)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+  }catch(e){container.innerHTML='<div style="text-align:center;padding:20px;color:var(--red)">Erreur chargement</div>';}
+}
+
+function showTip(e,date,price){
+  const tip=document.getElementById('tooltip');
+  const dt=new Date(date);
+  const label=dt.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const xof=price?Math.round(price*620).toLocaleString('fr-FR'):'—';
+  tip.innerHTML=`<div style="font-weight:600;margin-bottom:4px">${label}</div>
+    <div style="color:var(--accent)">${price?'$'+price.toFixed(2):'Aucun vol'}</div>
+    ${price?`<div style="color:var(--muted);font-size:11px">${xof} FCFA</div>`:''}`;
+  tip.style.display='block';
+  tip.style.left=(e.pageX+12)+'px';
+  tip.style.top=(e.pageY-30)+'px';
+}
+function hideTip(){document.getElementById('tooltip').style.display='none';}
+
+init();
+</script>
+</body>
+</html>

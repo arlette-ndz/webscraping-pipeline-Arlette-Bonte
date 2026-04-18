@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+data/
+logs/
+*.db
+celerybeat-schedule
+celerybeat.pid
+.scrapy/
+*.egg-info/
+.DS_Store

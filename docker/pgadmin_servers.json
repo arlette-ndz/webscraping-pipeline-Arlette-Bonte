@@ -1,0 +1,23 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Flights DB — ENSEA",
+      "Group": "Servers",
+      "Host": "db",
+      "Port": 5432,
+      "MaintenanceDB": "flights_db",
+      "Username": "postgres",
+      "SSLMode": "prefer",
+      "SSLCert": "",
+      "SSLKey": "",
+      "SSLRootCert": "",
+      "SSLCompression": 0,
+      "Timeout": 10,
+      "UseSSHTunnel": 0,
+      "TunnelHost": "",
+      "TunnelPort": 22,
+      "TunnelUsername": "",
+      "TunnelAuthentication": 0
+    }
+  }
+}

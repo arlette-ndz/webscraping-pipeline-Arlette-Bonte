@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vol Tracker Abidjan — Vue d'ensemble</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:       #06090f;
+  --surf:     #0d1117;
+  --card:     #111820;
+  --border:   #1c2a3a;
+  --accent:   #f97316;
+  --amber:    #f59e0b;
+  --blue:     #3b82f6;
+  --green:    #10b981;
+  --red:      #ef4444;
+  --purple:   #8b5cf6;
+  --text:     #e2e8f0;
+  --muted:    #64748b;
+  --head:     'Syne', sans-serif;
+  --body:     'Inter', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:14px;min-height:100vh}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  position:fixed;top:0;left:0;width:230px;height:100vh;
+  background:var(--surf);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:0;z-index:100;
+}
+.brand{padding:24px 20px 20px;border-bottom:1px solid var(--border)}
+.brand-icon{font-size:30px;margin-bottom:6px}
+.brand-name{font-family:var(--head);font-size:17px;font-weight:800;color:var(--accent);line-height:1.2}
+.brand-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.nav{flex:1;padding:16px 0;overflow-y:auto}
+.nav-section{padding:8px 20px 4px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600}
+.nav-link{
+  display:flex;align-items:center;gap:10px;padding:9px 20px;
+  font-size:13px;font-weight:500;color:var(--muted);
+  text-decoration:none;border-left:3px solid transparent;
+  transition:.15s;cursor:pointer
+}
+.nav-link:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.nav-link.active{color:var(--accent);border-left-color:var(--accent);background:rgba(249,115,22,.07)}
+.nav-icon{width:18px;text-align:center;font-size:16px}
+.sidebar-foot{padding:16px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);line-height:1.6}
+
+/* ── MAIN ── */
+.main{margin-left:230px;padding:28px 32px;min-height:100vh}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:16px;flex-wrap:wrap}
+.page-title{font-family:var(--head);font-size:24px;font-weight:800}
+.page-title span{color:var(--accent)}
+.page-sub{font-size:13px;color:var(--muted);margin-top:4px}
+.topbar-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ── BOUTONS ── */
+.btn{padding:8px 16px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:.15s;font-family:var(--body)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#ea6c0a}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.b-orange{background:rgba(249,115,22,.15);color:var(--accent)}
+.b-green{background:rgba(16,185,129,.15);color:var(--green)}
+.b-blue{background:rgba(59,130,246,.15);color:var(--blue)}
+.b-red{background:rgba(239,68,68,.15);color:var(--red)}
+
+/* ── STATUS ── */
+.status-bar{display:flex;align-items:center;gap:8px;padding:9px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:12px;margin-bottom:22px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── ALERT ── */
+.alert{padding:11px 14px;border-radius:7px;font-size:13px;margin-bottom:16px;display:none}
+.alert.show{display:block}
+.alert-ok{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);color:var(--green)}
+.alert-err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:var(--red)}
+.alert-info{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);color:var(--blue)}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.2);border-top-color:currentColor;border-radius:50%;animation:sp .6s linear infinite;margin-right:5px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── KPI ── */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--amber))}
+.kpi-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:600}
+.kpi-val{font-family:var(--head);font-size:26px;font-weight:800;line-height:1}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:5px}
+.kpi-ico{position:absolute;top:16px;right:16px;font-size:20px;opacity:.25}
+
+/* ── GRILLES ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.g3{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.card-title{font-family:var(--head);font-size:14px;font-weight:700}
+.chart-box{position:relative;height:230px}
+.chart-sm{position:relative;height:190px}
+
+/* ── FILTRES ── */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.sel,.inp{padding:7px 11px;border-radius:7px;background:var(--card);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:var(--body);outline:none;transition:.15s}
+.sel:focus,.inp:focus{border-color:var(--accent)}
+.fil-lbl{font-size:12px;color:var(--muted);font-weight:500}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;max-height:400px;overflow-y:auto}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;padding:9px 12px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:1}
+.tbl td{padding:11px 12px;border-bottom:1px solid rgba(28,42,58,.6);font-size:13px;white-space:nowrap}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(255,255,255,.02)}
+.pill{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.p-green{background:rgba(16,185,129,.15);color:var(--green)}
+.p-amber{background:rgba(245,158,11,.15);color:var(--amber)}
+.p-red{background:rgba(239,68,68,.15);color:var(--red)}
+.p-blue{background:rgba(59,130,246,.15);color:var(--blue)}
+.p-orange{background:rgba(249,115,22,.15);color:var(--accent)}
+.price-main{font-family:var(--head);font-size:14px;font-weight:700;color:var(--accent)}
+.price-sub{font-size:11px;color:var(--muted);margin-top:1px}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-ico{font-size:36px;margin-bottom:10px}
+
+/* ── PAGINATION ── */
+.pager{display:flex;gap:6px;padding:12px 0 0;align-items:center}
+.pager-info{font-size:12px;color:var(--muted);margin:0 8px}
+
+/* ── SCROLL ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+@media(max-width:1100px){
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .g2,.g3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-icon">✈️</div>
+    <div class="brand-name">Vol Tracker<br>Abidjan</div>
+    <div class="brand-sub">ENSEA — AS Data Science</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Navigation</div>
+    <a class="nav-link active" href="/">
+      <span class="nav-icon">📊</span>Vue d'ensemble
+    </a>
+    <a class="nav-link" href="/analyse">
+      <span class="nav-icon">📈</span>Analyse des prix
+    </a>
+    <div class="nav-section" style="margin-top:12px">Outils</div>
+    <a class="nav-link" href="http://localhost:5050" target="_blank">
+      <span class="nav-icon">🐘</span>PgAdmin
+    </a>
+    <a class="nav-link" href="/api/health" target="_blank">
+      <span class="nav-icon">🔌</span>API Health
+    </a>
+  </nav>
+</aside>
+
+<main class="main">
+
+  <div class="topbar">
+    <div>
+      <h1 class="page-title">Vols <span>Abidjan → Monde</span></h1>
+      <p class="page-sub" id="last-update">Chargement en cours…</p>
+    </div>
+    <div class="topbar-right">
+      <span class="badge b-orange">Niveau ARGENT 🥈</span>
+      <button class="btn btn-ghost" onclick="chargerTout()">⟳ Actualiser</button>
+      <button class="btn btn-primary" id="btn-scrap" onclick="lancerScraping()">
+        🔄 Lancer le scraping
+      </button>
+    </div>
+  </div>
+
+  <div class="alert" id="alert"></div>
+
+  <div class="status-bar">
+    <div class="dot"></div>
+    <span id="status-txt">Connexion à l'API…</span>
+    <span style="margin-left:auto;color:var(--muted)" id="status-time"></span>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-ico">✈️</div>
+      <div class="kpi-lbl">Vols collectés</div>
+      <div class="kpi-val" id="k-vols">—</div>
+      <div class="kpi-sub" id="k-vols-sub">En attente</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-ico">🌍</div>
+      <div class="kpi-lbl">Destinations</div>
+      <div class="kpi-val" id="k-dest">—</div>
+      <div class="kpi-sub">Villes surveillées</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-ico">💰</div>
+      <div class="kpi-lbl">Prix minimum</div>
+      <div class="kpi-val" id="k-prix">—</div>
+      <div class="kpi-sub" id="k-prix-sub">Meilleure offre</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-ico">🏢</div>
+      <div class="kpi-lbl">Compagnies</div>
+      <div class="kpi-val" id="k-comp">—</div>
+      <div class="kpi-sub">Opérant depuis ABJ</div>
+    </div>
+  </div>
+
+  <!-- Charts ligne 1 -->
+  <div class="g2">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">💰 Prix minimum par destination</span>
+        <span class="badge b-orange" id="badge-type">Aller simple</span>
+      </div>
+      <div class="chart-box"><canvas id="ch-bar"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">🌍 Vols par continent</span>
+        <span class="badge b-blue">Répartition</span>
+      </div>
+      <div class="chart-box"><canvas id="ch-donut"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Charts ligne 2 -->
+  <div class="g3">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">📅 Évolution des collectes</span>
+        <span class="badge b-green">Données/jour</span>
+      </div>
+      <div class="chart-box"><canvas id="ch-line"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">🛑 Escales</span>
+      </div>
+      <div class="chart-sm"><canvas id="ch-stops"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Filtres -->
+  <div class="filters">
+    <span class="fil-lbl">Filtres :</span>
+    <select class="sel" id="f-type" onchange="filtrerVols()">
+      <option value="">Tous types</option>
+      <option value="oneway">Aller simple</option>
+      <option value="return">Aller-retour</option>
+    </select>
+    <select class="sel" id="f-continent" onchange="filtrerVols()">
+      <option value="">Tous continents</option>
+      <option value="Afrique Ouest">Afrique Ouest</option>
+      <option value="Afrique Centre">Afrique Centre</option>
+      <option value="Afrique Est">Afrique Est</option>
+      <option value="Afrique Sud">Afrique Sud</option>
+      <option value="Afrique Nord">Afrique Nord</option>
+      <option value="Europe">Europe</option>
+      <option value="Moyen-Orient">Moyen-Orient</option>
+      <option value="Amériques">Amériques</option>
+      <option value="Asie">Asie</option>
+    </select>
+    <select class="sel" id="f-escales" onchange="filtrerVols()">
+      <option value="">Toutes escales</option>
+      <option value="0">Direct (0)</option>
+      <option value="1">1 escale</option>
+      <option value="2">2 escales</option>
+    </select>
+    <input class="inp" id="f-search" type="text" placeholder="🔍 Destination, compagnie…" oninput="filtrerVols()">
+    <button class="btn btn-ghost" onclick="resetFiltres()">✕</button>
+  </div>
+
+  <!-- Table -->
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">📋 Tableau des vols — Abidjan vers le monde</span>
+      <span class="badge b-green" id="tbl-count">0 vols</span>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Destination</th>
+            <th>Continent</th>
+            <th>Départ</th>
+            <th>Type</th>
+            <th>Prix USD</th>
+            <th>Prix FCFA</th>
+            <th>Escales</th>
+            <th>Villes escale</th>
+            <th>Compagnie</th>
+            <th>Durée</th>
+            <th>Classe</th>
+            <th>Collecté le</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-body">
+          <tr><td colspan="12" class="empty">
+            <div class="empty-ico">✈️</div>
+            <div>Cliquez sur "Lancer le scraping" pour collecter les données</div>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pager" id="pager"></div>
+  </div>
+
+</main>
+
+<script>
+const API = '';
+let charts = {};
+let currentPage = 1;
+
+// ── Drapeaux par code IATA ────────────────────────────────────────────────
+const FLAGS = {
+  DKR:'🇸🇳',ACC:'🇬🇭',LFW:'🇹🇬',BKO:'🇲🇱',OUA:'🇧🇫',LOS:'🇳🇬',COO:'🇧🇯',CKY:'🇬🇳',
+  DLA:'🇨🇲',YAO:'🇨🇲',LBV:'🇬🇦',NBO:'🇰🇪',ADD:'🇪🇹',NIM:'🇳🇪',JNB:'🇿🇦',CPT:'🇿🇦',
+  CMN:'🇲🇦',RAK:'🇲🇦',CAI:'🇪🇬',CDG:'🇫🇷',BRU:'🇧🇪',IST:'🇹🇷',LHR:'🇬🇧',AMS:'🇳🇱',
+  FRA:'🇩🇪',MAD:'🇪🇸',LIL:'🇫🇷',DOH:'🇶🇦',DXB:'🇦🇪',BEY:'🇱🇧',JFK:'🇺🇸',YUL:'🇨🇦',
+  IAD:'🇺🇸',ORD:'🇺🇸',MIA:'🇺🇸',LAX:'🇺🇸',YQB:'🇨🇦',YOW:'🇨🇦',CAN:'🇨🇳',PEK:'🇨🇳',
+  BOM:'🇮🇳',SPY:'🇨🇮',HGO:'🇨🇮',BYK:'🇨🇮',KEO:'🇨🇮',
+};
+
+const CONT_COLORS = {
+  'Afrique Ouest':'#10b981','Afrique Centre':'#34d399','Afrique Est':'#6ee7b7',
+  'Afrique Sud':'#a7f3d0','Afrique Nord':'#f59e0b','Afrique':'#fbbf24',
+  'Europe':'#3b82f6','Moyen-Orient':'#8b5cf6','Amériques':'#f97316',
+  'Asie':'#ec4899','Côte d\'Ivoire':'#14b8a6',
+};
+
+// ── Init ─────────────────────────────────────────────────────────────────
+async function chargerTout() {
+  await checkHealth();
+  await chargerStats();
+  await chargerVols(1);
+}
+
+// ── Health ────────────────────────────────────────────────────────────────
+async function checkHealth() {
+  try {
+    const d = await fetch(`${API}/api/health`).then(r=>r.json());
+    document.getElementById('status-txt').textContent =
+      `API connectée — ${d.vols_en_base} vols en base`;
+    document.getElementById('status-time').textContent =
+      new Date().toLocaleTimeString('fr-FR');
+  } catch {
+    document.getElementById('status-txt').textContent = 'API non disponible';
+    document.querySelector('.dot').style.background = 'var(--red)';
+  }
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────
+async function chargerStats() {
+  try {
+    const r = await fetch(`${API}/api/stats`);
+    if (!r.ok) return;
+    const {data: s} = await r.json();
+
+    document.getElementById('k-vols').textContent     = (s.total_vols||0).toLocaleString('fr-FR');
+    document.getElementById('k-dest').textContent     = s.total_destinations || 0;
+    document.getElementById('k-comp').textContent     = s.total_compagnies || 0;
+    document.getElementById('k-prix').textContent     = s.prix_min ? `$${s.prix_min}` : '—';
+    document.getElementById('k-prix-sub').textContent =
+      s.prix_min ? `≈ ${Math.round(s.prix_min*620).toLocaleString('fr-FR')} FCFA` : 'Meilleure offre';
+
+    const logs = s.scraping_logs || [];
+    if (logs.length) {
+      const last = logs[0];
+      const dt   = new Date(last.demarrage);
+      document.getElementById('last-update').textContent =
+        `Dernière collecte : ${dt.toLocaleString('fr-FR')} — ${last.statut} (${last.vols_collectes||0} vols)`;
+    } else {
+      document.getElementById('last-update').textContent =
+        'Aucune collecte — cliquez sur "Lancer le scraping"';
+    }
+
+    dessinerBar(s.par_destination || []);
+    dessinerDonut(s.par_continent || []);
+    dessinerLine(s.evolution || []);
+    dessinerStops(s.par_escales || []);
+
+  } catch(e) { console.error('Stats:', e); }
+}
+
+// ── Charts ────────────────────────────────────────────────────────────────
+const COPTS = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},
+};
+
+function dessinerBar(dests) {
+  const top = dests.slice(0,12);
+  const labels = top.map(d=>(FLAGS[d.destination]||'')+ ' ' +(d.ville_destination||d.destination));
+  const vals   = top.map(d=>d.prix_min);
+  if(charts.bar) charts.bar.destroy();
+  charts.bar = new Chart(document.getElementById('ch-bar'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        label:'Prix min (USD)',data:vals,
+        backgroundColor:labels.map((_,i)=>`hsla(${20+i*18},80%,58%,.75)`),
+        borderColor:labels.map((_,i)=>`hsla(${20+i*18},80%,65%,1)`),
+        borderWidth:1,borderRadius:5,
+      }]
+    },
+    options:{...COPTS,
+      scales:{
+        x:{ticks:{color:'#64748b',font:{size:10},maxRotation:35},grid:{color:'rgba(255,255,255,.03)'}},
+        y:{ticks:{color:'#64748b',callback:v=>'$'+v},grid:{color:'rgba(255,255,255,.05)'}},
+      },
+      plugins:{...COPTS.plugins,
+        tooltip:{callbacks:{label:c=>` $${c.parsed.y} (~${Math.round(c.parsed.y*620).toLocaleString()} FCFA)`}}
+      }
+    }
+  });
+}
+
+function dessinerDonut(conts) {
+  if(!conts.length) return;
+  if(charts.donut) charts.donut.destroy();
+  charts.donut = new Chart(document.getElementById('ch-donut'),{
+    type:'doughnut',
+    data:{
+      labels:conts.map(c=>c.continent),
+      datasets:[{
+        data:conts.map(c=>c.nb_vols),
+        backgroundColor:conts.map(c=>CONT_COLORS[c.continent]||'#64748b'),
+        borderWidth:2,borderColor:conts.map(c=>CONT_COLORS[c.continent]||'#64748b'),
+        hoverOffset:6,
+      }]
+    },
+    options:{...COPTS,cutout:'62%',
+      plugins:{legend:{position:'right',labels:{color:'#94a3b8',padding:12,font:{size:11}}}},
+    }
+  });
+}
+
+function dessinerLine(evol) {
+  if(!evol.length) return;
+  const rev = [...evol].reverse();
+  if(charts.line) charts.line.destroy();
+  charts.line = new Chart(document.getElementById('ch-line'),{
+    type:'line',
+    data:{
+      labels:rev.map(e=>e.date),
+      datasets:[
+        {label:'Vols collectés',data:rev.map(e=>e.nb_vols),
+         borderColor:'#f97316',backgroundColor:'rgba(249,115,22,.12)',
+         tension:.35,fill:true,pointRadius:4,pointHoverRadius:7},
+      ]
+    },
+    options:{...COPTS,
+      scales:{
+        x:{ticks:{color:'#64748b',maxTicksLimit:10},grid:{color:'rgba(255,255,255,.03)'}},
+        y:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,.05)'}},
+      },
+    }
+  });
+}
+
+function dessinerStops(stops) {
+  if(!stops.length) return;
+  const labels = stops.map(s=>s.escales===0?'✈ Direct':s.escales===1?'1 escale':`${s.escales} escales`);
+  const vals   = stops.map(s=>s.nb_vols);
+  const cols   = ['rgba(16,185,129,.75)','rgba(245,158,11,.75)','rgba(239,68,68,.65)','rgba(139,92,246,.65)'];
+  if(charts.stops) charts.stops.destroy();
+  charts.stops = new Chart(document.getElementById('ch-stops'),{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{data:vals,backgroundColor:cols,borderColor:cols.map(c=>c.replace('.65','1').replace('.75','1')),borderWidth:1,borderRadius:5}]
+    },
+    options:{...COPTS,
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:c=>` ${c.parsed.y} vols | moy. $${stops[c.dataIndex].prix_moyen||'?'}`}}
+      },
+      scales:{
+        x:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,.03)'}},
+        y:{ticks:{color:'#64748b'},grid:{color:'rgba(255,255,255,.05)'}},
+      }
+    }
+  });
+}
+
+// ── Table vols ────────────────────────────────────────────────────────────
+async function chargerVols(page=1) {
+  currentPage = page;
+  const type  = document.getElementById('f-type').value;
+  const cont  = document.getElementById('f-continent').value;
+  const esc   = document.getElementById('f-escales').value;
+  const q     = document.getElementById('f-search').value.trim();
+
+  let url = `${API}/api/vols?page=${page}&limit=20`;
+  if(type)           url += `&type_vol=${encodeURIComponent(type)}`;
+  if(cont)           url += `&continent=${encodeURIComponent(cont)}`;
+  if(esc !== '')     url += `&escales=${esc}`;
+  if(q)              url += `&destination=${encodeURIComponent(q)}`;
+
+  try {
+    const r = await fetch(url);
+    if(!r.ok) return;
+    const {data:vols, pagination:pg} = await r.json();
+
+    document.getElementById('tbl-count').textContent = `${pg.total} vols`;
+    renderTable(vols);
+    renderPager(pg);
+  } catch(e){ console.error('Vols:',e); }
+}
+
+function renderTable(vols) {
+  const tb = document.getElementById('tbl-body');
+  if(!vols||!vols.length){
+    tb.innerHTML = `<tr><td colspan="12" class="empty">
+      <div class="empty-ico">🔍</div><div>Aucun vol trouvé</div></td></tr>`;
+    return;
+  }
+  tb.innerHTML = vols.map(v=>{
+    const flag  = FLAGS[v.destination]||'🌍';
+    const sc    = v.escales===0?'p-green':v.escales===1?'p-amber':'p-red';
+    const sl    = v.escales===0?'Direct':`${v.escales} escale${v.escales>1?'s':''}`;
+    const dur   = v.duree_minutes ? `${Math.floor(v.duree_minutes/60)}h${String(v.duree_minutes%60).padStart(2,'0')}` : '—';
+    const dep   = v.date_depart   ? new Date(v.date_depart).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'2-digit'}) : '—';
+    const coll  = v.date_collecte ? new Date(v.date_collecte).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}) : '—';
+    const xof   = v.prix_xof      ? Number(v.prix_xof).toLocaleString('fr-FR')+' F' : '—';
+    const tpill = v.type_vol==='return'?'<span class="pill p-blue">↔ A/R</span>':'<span class="pill p-orange">→ Aller</span>';
+    const comp  = (v.compagnie||'—').substring(0,30)+(v.compagnie&&v.compagnie.length>30?'…':'');
+    return `<tr>
+      <td><span style="margin-right:6px">${flag}</span><strong>${v.ville_destination||v.destination}</strong><br><span style="color:var(--muted);font-size:11px">${v.pays_destination||''}</span></td>
+      <td><span style="font-size:11px;color:var(--muted)">${v.continent||'—'}</span></td>
+      <td>${dep}</td>
+      <td>${tpill}</td>
+      <td><div class="price-main">$${Number(v.prix).toFixed(2)}</div></td>
+      <td><div class="price-sub">${xof}</div></td>
+      <td><span class="pill ${sc}">${sl}</span></td>
+      <td style="color:var(--muted);font-size:12px;max-width:120px">${v.villes_escale||'—'}</td>
+      <td style="font-size:12px;max-width:140px" title="${v.compagnie||''}">${comp}</td>
+      <td style="color:var(--muted)">${dur}</td>
+      <td style="color:var(--muted);font-size:12px">${v.classe_cabine||'—'}</td>
+      <td style="color:var(--muted);font-size:11px">${coll}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPager(pg){
+  const bar = document.getElementById('pager');
+  if(pg.pages<=1){bar.innerHTML='';return}
+  let h='';
+  if(pg.page>1) h+=`<button class="btn btn-ghost" onclick="chargerVols(${pg.page-1})">← Préc.</button>`;
+  h+=`<span class="pager-info">Page ${pg.page} / ${pg.pages} — ${pg.total} vols</span>`;
+  if(pg.page<pg.pages) h+=`<button class="btn btn-ghost" onclick="chargerVols(${pg.page+1})">Suiv. →</button>`;
+  bar.innerHTML=h;
+}
+
+function filtrerVols(){ chargerVols(1); }
+function resetFiltres(){
+  ['f-type','f-continent','f-escales'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-search').value='';
+  chargerVols(1);
+}
+
+// ── Scraping ──────────────────────────────────────────────────────────────
+async function lancerScraping(){
+  const btn = document.getElementById('btn-scrap');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spin"></span>En cours…';
+  showAlert('info','🔄 Scraping lancé en arrière-plan. Les données seront mises à jour automatiquement.');
+  try{
+    const r = await fetch(`${API}/api/scrape`,{method:'POST'});
+    const d = await r.json();
+    if(d.success){
+      showAlert('info',`⏳ Tâche ${d.task_id} en cours. Actualisation dans 30s…`);
+      setTimeout(()=>pollTask(d.task_id),5000);
+    } else {
+      showAlert('err',`Erreur : ${d.error||'inconnue'}`);
+      resetBtn();
+    }
+  } catch(e){
+    showAlert('err',`Impossible de contacter l'API : ${e.message}`);
+    resetBtn();
+  }
+}
+
+async function pollTask(tid){
+  try{
+    const d = await fetch(`${API}/api/scrape/status/${tid}`).then(r=>r.json());
+    if(d.status==='SUCCESS'){
+      const items = d.result?.items||0;
+      showAlert('ok',`✅ Scraping terminé ! ${items} vols collectés et mis à jour en base.`);
+      await chargerTout();
+      resetBtn();
+    } else if(d.status==='FAILURE'){
+      showAlert('err',`❌ Erreur : ${JSON.stringify(d.result)}`);
+      resetBtn();
+    } else {
+      const s = d.result?.status||d.status;
+      showAlert('info',`⏳ ${s}… Vérification dans 15s.`);
+      setTimeout(()=>pollTask(tid),15000);
+    }
+  } catch{
+    setTimeout(()=>pollTask(tid),20000);
+  }
+}
+
+function resetBtn(){
+  const btn=document.getElementById('btn-scrap');
+  btn.disabled=false;btn.innerHTML='🔄 Lancer le scraping';
+}
+
+function showAlert(type,msg){
+  const el=document.getElementById('alert');
+  el.className=`alert alert-${type} show`;el.innerHTML=msg;
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────
+chargerTout();
+setInterval(checkHealth,30000);
+</script>
+</body>
+</html>
